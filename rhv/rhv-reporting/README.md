@@ -7,10 +7,10 @@ This procedure will create report files for each TrilioVault Workload and a sing
 
 ### DIRECTIONS TO ENABLE REPORTS
 
-1. STEP 1- Copy reporting Python scripts to the /root/rhv-reporting directory
+1. STEP 1- Copy reporting Python scripts to the /root/solutions/rhv/rhv-reporting directory
 
     ```cd /root```
-    ```git clone https://github.com/trilioData/solutions/rhv/rhv-reporting.git```
+    ```git clone https://github.com/trilioData/solutions```
 
 1. STEP 2- Create the directory structure that will house the backup reports
 
@@ -18,7 +18,7 @@ This procedure will create report files for each TrilioVault Workload and a sing
 
 1. STEP 3- Add execute permissions to Python files
 
-    ```cd /root/rhv-reporting```
+    ```cd /root/solutions/rhv/rhv-reporting```
 
     ```chmod +x overall_report.py workload_report.py```
     or
@@ -35,7 +35,7 @@ This procedure will create report files for each TrilioVault Workload and a sing
 1. STEP 6- Create a Cron job to run both scripts at the same time each day. This script will run both reports at 12:01 AM every day of the year
    1. STEP 6a- Copy the coresponding crontab file from rhv-reporting folder
 
-    ```cd /root/rhv-reporting```
+    ```cd /root/solutions/rhv/rhv-reporting```
 
     ```cp reporting_cron /var/spool/cron/root```
     or
