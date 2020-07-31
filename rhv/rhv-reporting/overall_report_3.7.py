@@ -1,18 +1,19 @@
 import argparse
 import base64
-import os
-import logging
-import datetime
-import ovirtsdk4 as sdk
 import configparser
+import datetime
+import logging
+import os
+
 import mysql.connector
+import ovirtsdk4 as sdk
 
 logging.basicConfig(level=logging.DEBUG, filename='example.log')
 config = configparser.ConfigParser(interpolation=None)
 config.read('/etc/workloadmgr/workloadmgr.conf')
 
 rhv_connection = sdk.Connection(
-    url=str(config['ovirt_authtoken']['rhv_auth_url']+"/api"),
+    url=str(config['ovirt_authtoken']['rhv_auth_url'] + "/api"),
     username=str(config['ovirt_authtoken']['rhv_username']),
     password=base64.b85decode(config['ovirt_authtoken']['rhv_password']).decode("utf-8"),
     insecure=True,
