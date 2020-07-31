@@ -55,7 +55,7 @@ def get_protected_vms():
     return vm_ids
 def get_current_date():
     now = datetime.datetime.now()
-    dt_string = now.strftime("%d-%m-%Y-%H:%M:%S")
+    dt_string = now.strftime("%Y-%m-%dT%H:%M:%S")
     return dt_string
 
 def print_delimeter(file):
