@@ -24,13 +24,14 @@ if ! find "$newest_file" -newermt '1 day ago' -exec false {} +; then
       grep -o '[^ ]*$'
   )
   if [[ $number_of_failed_snapshots -ne 0 ]]; then
-    mail -s "$subject failed!" -r "$from" -S "smtp=$smtp" "$recipients" <<-EOF
-			Check your Backups in RHV!
-		EOF
+		{
+		  printf 'Check your Backups in RHV!\nReport file:%s\n\n\n' "$newest_file"
+		  grep -v '^[[:space:]]*$' "$newest_file"
+		} |
+		  mail -s "$subject failed!" -r "$from" -S "smtp=$smtp" "$recipients"
   else
-    mail -s "$subject success" -r "$from" -S "smtp=$smtp" "$recipients" <<-EOF
-			RHV Backup OK
-		EOF
+    printf 'RHV Backup OK\n' |
+      mail -s "$subject success" -r "$from" -S "smtp=$smtp" "$recipients"
   fi
 else
   mail -s "$subject" -r "$from" -S "smtp=$smtp" "$recipients" <<-EOF
