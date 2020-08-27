@@ -46,7 +46,7 @@ def get_workloads():
 
 def get_current_date():
     now = datetime.datetime.now()
-    dt_string = now.strftime("%d-%m-%Y-%H:%M:%S")
+    dt_string = now.strftime("%Y-%m-%dT%H:%M:%S")
     return dt_string
 
 def get_schedule(report, jobschedule):
