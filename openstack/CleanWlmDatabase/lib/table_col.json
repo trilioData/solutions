@@ -21,5 +21,7 @@
   "scheduled_jobs": "workload_id",
   "workload_vms": "workload_id",
   "workload_metadata": "workload_id",
-  "workload_vm_metadata": "workload_vm_id"
+  "workload_vm_metadata": "workload_vm_id",
+  "snap_network_resources": "snapshot_id",
+  "snap_network_resource_metadata": "snap_network_resource_id"
 }
