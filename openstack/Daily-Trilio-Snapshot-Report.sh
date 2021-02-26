@@ -3,7 +3,7 @@
 # This script is designed to provide CSV report for last/latest/running snapshot of all workloads in TVO and TVR environment.
 # It will provide following fields in report
 #'PROJECT_ID','WORKLOAD_ID','WORKLOAD_NAME','SNAPSHOT_ID','SNAPSHOT_NAME','VM_ID','VM_NAME','SNAPSHOT_TYPE','CREATED_AT','FINISHED_AT','STATUS','TIME_TAKEN','TVM_HOST','ERROR','UPLOADED_SIZE','BACKUP_SIZE','RESTORE_SIZE'
-# Use only '|' as delimited on csv report to convert data from text to columns
+# Use only '|' as delimiter on csv report to convert data from text to columns
 # Written By : Jayesh Chaudhari
 # Date : 02/02/2021
 # Last Updated : 26/02/2021
