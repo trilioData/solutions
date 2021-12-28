@@ -15,6 +15,8 @@ Utility consists of following artifacts:
 
 2. The shell scripts to be executed from TVault machine only; currently remote execution not feasible.
 
+3. **Note: The utility assumes the mysql user/password are the default ones as set at Trilio appliance level; in case the same is modified by the customer, then respective select query in fetchSS.sh and delete query in snapshotDelete.sh should be modified accordingly to consider updated user id/password.**
+
 ## Steps to create snapshot list
 
 1. Edit DB select query present inside setSnapshotCriteria function in shell script fetchSS.sh as per the desired critieria.
@@ -25,7 +27,6 @@ Utility consists of following artifacts:
 
 3. Corresponding log file will also be created in the same location.
 
-    >   *Note: The utility assumes the mysql user/password are the default ones as set at Trilio appliance level; in case the same is modified by the customer, then respective select query in fetchSS.sh and delete query in snapshotDelete.sh should be modified accordingly to consider updated user id/password.*
 
 ## Validation
 1. Manually check if ssList.txt has required data in format <SnapshotID>,<SnapshotName>,<SnapshotStatus>
