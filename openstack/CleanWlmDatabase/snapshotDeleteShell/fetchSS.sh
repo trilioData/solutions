@@ -11,7 +11,7 @@ init()
 setSnapshotCriteria()
 {
 	#Update below query to get required snapshot list
-	mysql -e "select id, display_name, status from snapshots where status = 'deleted' order by created_at asc limit 3" \
+	mysql -e "select id, display_name, status from snapshots where status = 'deleted' order by created_at" \
 	workloadmgr -Ns | sed 's/\t/,/g' > ${ssFile}
 }
 
