@@ -60,3 +60,15 @@ Utility consists of following artifacts:
 3. All the required workloads will be physically deleted from the database along with respective snapshots and related metadata, VMs mapping, etc.
 
 4. Corresponding log files will be created in logs directory.
+
+
+## Steps to delete snapshots from database
+
+1. Provide ids of snapshot which are to be deleted (*physically*) from the database in config/snapshot_ids.txt file.
+
+2. Execute snapshot_delete.py script.
+
+    >   *python snapshot_delete.py*
+3. All the required snapshots will be physically deleted from the database.
+
+4. Corresponding log files will be created in logs directory.
