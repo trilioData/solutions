@@ -57,7 +57,7 @@ Utility consists of following artifacts:
 2. Execute workloads_delete.py script.
 
     >   *python workloads_delete.py*
-3. All the required workloads will be physically deleted from the database along with respective snapshots and related metadata, VMs mapping, etc.
+3. All the required workloads which is soft deleted will be physically deleted from the database along with respective snapshots and related metadata, VMs mapping, etc.
 
 4. Corresponding log files will be created in logs directory.
 
@@ -69,6 +69,6 @@ Utility consists of following artifacts:
 2. Execute snapshot_delete.py script.
 
     >   *python snapshot_delete.py*
-3. All the required snapshots will be physically deleted from the database.
+3. All the required snapshots which is soft deleted will be physically deleted from the database along with respective snapshots VMs and related metadata etc.
 
 4. Corresponding log files will be created in logs directory.
