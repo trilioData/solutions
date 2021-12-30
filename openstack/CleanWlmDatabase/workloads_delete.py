@@ -9,7 +9,7 @@ from lib.utility import (setup_logger,
 def delete_workload(curr, conn, workload_ids):
     for workload_id in workload_ids:
         try:
-            workload_exists = "SELECT EXISTS(SELECT * FROM workloads WHERE id = %s)"
+            workload_exists = "SELECT EXISTS(SELECT * FROM workloads WHERE id = %s AND deleted = 1 AND status = \"deleted\")"
             curr.execute(workload_exists, (workload_id,))
             temp = curr.fetchall()[0][0]
             if temp == 1:
