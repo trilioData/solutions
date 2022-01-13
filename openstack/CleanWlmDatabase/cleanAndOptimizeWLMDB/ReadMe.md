@@ -1,5 +1,10 @@
-DB Cleanup for TUK
-==================
+workloadmgr Cleanup and table optimization
+==========================================
+Purpose
+-------
+Current set of utilities/scripts should be used in case when physical deletion of logically deleted records from workloadmgr required. Post physical deletion, to release the disk space from TVault appliance consumed by mysql ibd files, table optmization is required which is a time and resource consuming process.
+Also this process will require a downtime.
+
 Artifacts
 ---------
 1. ReadMe.md : Steps to be followed for DB cleanup and disk optimization.
