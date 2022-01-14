@@ -1,12 +1,12 @@
 ## Summary
 
-Current utility is created for enabling the physical deletion of selective workloads (*and corresponding snapshots along with respective metadata*) from the TrilioVault database.
+Current utility is created for enabling the physical deletion of selective workloads (*and corresponding snapshots along with respective metadata*) from the TrilioVault database. 
     
 ## Artifacts
 
 Utility consists of following artifacts:
-1. enablephysicaldelete.py : Python script to modify the definition of selective foreign keys so that physical deletion of interdependent data is feasible without major manual intervention. This script needs to be executed only once on any Tvault Machine.
-2. workloads_delete.py : Python script to selectively delete workloads as provided by the user. This script is to be executed after execution of enablephysicaldelete.py is done. User can execute this multiple times, if need be.
+1. enablephysicaldelete.py : Python script to modify the definition of selective foreign keys so that physical deletion of interdependent data is feasible without major manual intervention. This script needs to be executed only once on any Tvault Machine. _This utility should be run against TVO-4.0 & lower releases only._
+2. workloads_delete.py : Python script to selectively delete workloads as provided by the user. This script is to be executed after execution of enablephysicaldelete.py is done. User can execute this multiple times, if need be. _This utility can be run against any of the TVO releases; for TVO-4.0 and lower, enablephysicaldelete.py should be run before workloads_delete.py._
 3. config : This directory consistes of files connection.json and workloads_ids.txt. These are required to be populated by the user.
 
 
