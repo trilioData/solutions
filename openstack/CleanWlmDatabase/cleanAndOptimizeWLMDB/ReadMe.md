@@ -1,9 +1,10 @@
 workloadmgr Cleanup and table optimization
 ==========================================
-Purpose
+Summary
 -------
-Current set of utilities/scripts should be used in case when physical deletion of logically deleted records from workloadmgr required. Post physical deletion, to release the disk space from TVault appliance consumed by mysql ibd files, table optmization is required which is a time and resource consuming process.
-Also this process will require a downtime.
+Current set of utilities/scripts should be used in case when physical deletion of logically deleted records from workloadmgr database required. Post physical deletion, to release the disk space from TVault appliance consumed by mysql ibd files, table optmization is required which is a time and resource consuming process.
+Also this activity will require a downtime.
+_**Note** : This utility can be run against any of the TVO releases_
 
 Artifacts
 ---------
