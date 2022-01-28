@@ -1,7 +1,7 @@
 ## Summary
 
-Current utility is created for enabling the physical deletion of selective snapshots (*and corresponding data along with respective metadata*) from the TrilioVault database.
-    
+Current utility is created for enabling the physical deletion of selective snapshots (*and corresponding data along with respective metadata*) from the TrilioVault database. This utility can be run against TVO-4.1 & further releases.
+
 ## Artifacts
 
 Utility consists of following artifacts:
