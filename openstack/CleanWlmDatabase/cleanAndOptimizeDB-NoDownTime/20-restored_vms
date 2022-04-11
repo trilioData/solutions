@@ -1,0 +1,3 @@
+#DELETE main FROM restored_vms AS main INNER JOIN restores AS sub1 INNER JOIN snapshots AS sub2 WHERE main.restore_id = sub1.id AND sub1.snapshot_id = sub2.id AND sub2.deleted = 1
+#SELECT * FROM restored_vms AS del_table JOIN (SELECT main.id FROM restored_vms AS main INNER JOIN restores AS sub1 INNER JOIN snapshots AS sub2 WHERE main.restore_id = sub1.id AND sub1.snapshot_id = sub2.id AND sub2.deleted = 1 LIMIT 1) del_select ON del_select.id = del_table.id
+DELETE del_table FROM restored_vms AS del_table JOIN (SELECT main.id FROM restored_vms AS main INNER JOIN restores AS sub1 INNER JOIN snapshots AS sub2 WHERE main.restore_id = sub1.id AND sub1.snapshot_id = sub2.id AND sub2.deleted = 1 LIMIT #LIMIT#) del_select ON del_select.id = del_table.id
