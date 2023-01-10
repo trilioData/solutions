@@ -19,6 +19,7 @@
 _`./backing_file_update.sh /var/triliovault-mounts/<base64>/workload_<workload_id>`_
 - `/var/triliovault-mounts/<base64>` is mounted NFS after reconfigure
 - `<workload_id>` is the workload id to process (copied one)
+- **Note:** In case of encrypted workloads, the user must have the payload of the secret used in the workload. The script will ask for payload for rabasing backup chain.
 
 ## Logs:
 - Logs can be found at location `/tmp/backing_file_update.log`
