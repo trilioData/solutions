@@ -1,0 +1,88 @@
+import os
+import configparser
+import re
+import mysql.connector
+
+# Get records to be deleted using select query
+# Write those records into file
+# Run delete on those records
+
+batchSize=1000
+
+# DB connection 
+## Grab fields from the conf file
+config = configparser.ConfigParser()
+config.read('/etc/workloadmgr/workloadmgr.conf')
+mysql_conn = config['DEFAULT']['sql_connection']
+db_string = re.split('mysql://|=|@|/|:|\?', mysql_conn)
+
+## Edit these 4 variable manually if you want to change any of them
+db_user = db_string[1]
+db_pass = db_string[2]
+db_host = db_string[3]
+db_db = db_string[4]
+
+my_connect = mysql.connector.connect(user=db_user, password=db_pass, host=db_host, database=db_db)
+cursor = my_connect.cursor(dictionary=True)
+
+
+def getRecords(batchSize):
+    try:
+       filepath="./select_queries/{}".format(table)
+       tablename = open(filepath,"r")
+       #print(tablename)
+       query=tablename.readline()
+       tablename.close()
+       record_count=1
+       while record_count > 0:
+          print('\n\nGetting records from {}'.format(table))
+          query=query.replace("#LIMIT#",str(batchSize))
+          print("Running query : {}".format(query))
+          cursor.execute(query)
+          result=cursor.fetchall()
+          record_count=len(result)
+          writeRecords(result)
+    except IOError:
+       print('File for table {} not present'.format(table))
+
+def writeRecords(data):
+    print('\nWritting records to be deleted from table {}'.format(table))
+    try:
+       filepath="./recordsToBeDeleted/{}".format(table)
+       f = open(filepath,"w")
+       for x in data:
+         for i in x.values(): 
+            f.writelines(i+"\n")
+            #print(i)
+       f.close()
+       deleteRecords()
+    except IOError:
+       print('File for table {} not present'.format(table))
+
+def deleteRecords():
+    print('\nDeleting records from table {}'.format(table))
+    try:
+       filepath="./recordsToBeDeleted/{}".format(table)
+       f = open(filepath,"r+")
+       records=f.read().splitlines()
+       filepath2="./delete_queries/{}".format(table)
+       f2 = open(filepath2,"r")
+       delete_query=f2.readline()
+       delete_query=delete_query.replace("#IDs",'\',\''.join(records))
+       print(delete_query)
+       cursor.execute(delete_query)
+       my_connect.commit()
+       #for i in records:
+       #    print(delete_query.replace("#IDs",i))
+       f.close()
+       f2.close()
+    except IOError:
+       print('File for table {} not present'.format(table))
+
+
+file = open("fileList.txt")
+data=file.read().splitlines()
+for table in data:
+    #print(table)
+    getRecords(batchSize)
+file.close()

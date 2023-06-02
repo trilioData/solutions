@@ -1,0 +1,1 @@
+DELETE FROM snap_network_resource_metadata where id in ('#IDs')

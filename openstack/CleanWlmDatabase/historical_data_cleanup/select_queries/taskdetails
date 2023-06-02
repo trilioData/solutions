@@ -1,0 +1,1 @@
+SELECT uuid FROM taskdetails WHERE state = 'SUCCESS' OR state = 'REVERTED' OR state = 'FAILURE' limit #LIMIT#

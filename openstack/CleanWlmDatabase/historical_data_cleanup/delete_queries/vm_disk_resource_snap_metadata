@@ -1,0 +1,1 @@
+DELETE FROM vm_disk_resource_snap_metadata where id in ('#IDs')

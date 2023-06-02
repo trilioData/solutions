@@ -1,0 +1,1 @@
+SELECT del_table.id FROM snap_network_resource_metadata AS del_table  JOIN (SELECT main.id FROM snap_network_resource_metadata AS main, snap_network_resources AS sub1, snapshots AS sub2 WHERE main.snap_network_resource_id = sub1.id AND sub1.snapshot_id = sub2.id AND sub2.deleted = 1 limit #LIMIT#) del_select ON del_select.id = del_table.id

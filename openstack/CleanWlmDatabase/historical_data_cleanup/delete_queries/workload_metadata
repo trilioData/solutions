@@ -1,0 +1,1 @@
+DELETE FROM workload_metadata where id in ('#IDs')

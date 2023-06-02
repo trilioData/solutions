@@ -1,0 +1,1 @@
+DELETE FROM vm_security_group_rule_snaps where id in ('#IDs')

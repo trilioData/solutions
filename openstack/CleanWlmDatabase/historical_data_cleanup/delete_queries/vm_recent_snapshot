@@ -1,0 +1,1 @@
+DELETE FROM vm_recent_snapshot where vm_id in ('#IDs')
