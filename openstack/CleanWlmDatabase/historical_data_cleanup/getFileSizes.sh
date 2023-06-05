@@ -1,6 +1,6 @@
 #!/bin/bash
 
-inpFile="tableList.txt"
+inpFile="fileList.txt"
 loc="/var/lib/mysql/workloadmgr"
 fileSizes="fileSizes-`hostname | cut -d"-" -f1`.txt"
 tableCount=`wc -l $inpFile | awk '{print $1}'`
@@ -13,6 +13,6 @@ while read line
 do
 	du -sh $loc/$line.ibd >> $fileSizes
 	iCnt=`expr $iCnt + 1`
-done < tableList.txt
+done < fileList.txt
 
 echo "Done taking sizes at `date`" >> $fileSizes

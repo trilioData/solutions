@@ -1,7 +1,7 @@
 #!/bin/bash
 
 finalQuery=""
-inpFile="tableList.txt"
+inpFile="fileList.txt"
 tableCount=`wc -l $inpFile | awk '{print $1}'`
 iCnt=1
 
@@ -14,7 +14,7 @@ do
 	fi
 	iCnt=`expr $iCnt + 1`
 	finalQuery=$finalQuery$query
-done < tableList.txt
+done < fileList.txt
 echo "Run $finalQuery"
 date >> recCounts.txt
 mysql -e "$finalQuery" workloadmgr | tee -a recCounts.txt
