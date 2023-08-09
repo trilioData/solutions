@@ -75,7 +75,7 @@ do
       backing_json="json:{\"encrypt.key-secret\":\"sec0\",\"driver\":\"qcow2\",\"file\":{\"driver\":\"file\",\"filename\":\"`echo ${new_backing_file}`\"}}"
       qemu-img rebase --object secret,id=sec0,data=$payload --image-opts driver=qcow2,encrypt.key-secret=sec0,encrypt.format=luks,file.filename=$qcow_file_path -b $backing_json
     else
-      qemu-img rebase -u -b $new_backing_file $qcow2_file_to_rebase
+      qemu-img rebase -u -F qcow2 -b $new_backing_file $qcow2_file_to_rebase
     fi
 
     echo -e "\nNew backing file: " $new_backing_file
