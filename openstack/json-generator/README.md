@@ -1,13 +1,23 @@
 # Restore Json Generator Tool
 
 ## Table of Contents
-- [Requirements](#requirements)
+- [Prerequisites](#prerequisites)
 - [Usage](#usage)
 - [Arguments](#arguments)
 - [Example](#example)
 
-## Requirements
-To run this tool, you need to source the OpenStack RC file.
+## Prerequisites
+Before running this tool, ensure that the OpenStack RC file includes the necessary environment variables listed below:
+
+- `OS_AUTH_URL`
+- `OS_USERNAME`
+- `OS_PASSWORD`
+- `OS_PROJECT_NAME`
+- `OS_USER_DOMAIN_NAME`
+- `OS_PROJECT_ID`
+- `OS_PROJECT_DOMAIN_ID`
+
+Additionally, make sure to execute this script where **workloadmgr-client** is installed.
 
 ## Description
 This tool is designed to generate a `restore.json` file required for executing a Selective/Inplace restore operation.
