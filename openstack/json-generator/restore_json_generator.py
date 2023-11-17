@@ -2,37 +2,307 @@ import argparse
 import os
 import json
 import ipaddress
-import openstack
+from openstack import connection
+import workloadmgrclient
 import workloadmgrclient.v1.client as wlmclient
-
+from pkg_resources import packaging
+import multiprocessing
+from prettytable import PrettyTable, ALL
 
 def openstack_client():
     try:
-        osclient = openstack.connect(
+        osclient = connection.Connection(
             auth_url=os.environ.get('OS_AUTH_URL'),
             username=os.environ.get('OS_USERNAME'),
             password=os.environ.get('OS_PASSWORD'),
             project_name=os.environ.get('OS_PROJECT_NAME'),
-            user_domain_name = os.environ.get('OS_USER_DOMAIN_NAME'),
-            project_domain_name=os.environ.get('OS_PROJECT_NAME'))
+            domain_id=os.environ.get('OS_PROJECT_DOMAIN_ID'),
+            region_name=os.environ.get('OS_REGION_NAME'),
+            insecure=True)
         return osclient
     except Exception as ex:
         raise ex
 
-
 def get_wlm_client():
     try:
+        wlm_ver = workloadmgrclient.__version__
+        if packaging.version.parse(wlm_ver) < packaging.version.parse("5.0.0"):
+            project_id = os.environ.get('OS_PROJECT_NAME')
+        else:
+            project_id = os.environ.get('OS_PROJECT_ID')
+
         wlm = wlmclient.Client(
             auth_url=os.environ.get('OS_AUTH_URL'),
             username=os.environ.get('OS_USERNAME'),
             password=os.environ.get('OS_PASSWORD'),
-            project_id=os.environ.get('OS_PROJECT_ID'),
-            project_name=os.environ.get('OS_PROJECT_NAME'),
-            domain_name=os.environ.get('OS_PROJECT_DOMAIN_ID'))
+            project_id=project_id,
+            domain_name=os.environ.get('OS_PROJECT_DOMAIN_ID'),
+            insecure=True)
         return wlm
     except Exception as ex:
         raise ex
 
+
+def get_snapshot_info(snapshot_id):
+    client = get_wlm_client()
+    snapshot_obj = client.snapshots.get(snapshot_id)
+    return snapshot_obj._info
+
+
+def read_json_file(file_path):
+    restore_data = ''
+    with open(file_path, 'r') as restore_file:
+        restore_data = json.load(restore_file)
+    return restore_data
+
+
+def fetch_snapshot_network_data(snap_network, snapshot_id):
+    client = get_wlm_client()
+    snapshot_obj = client.snapshots.get(snapshot_id)
+    snapshot_info = snapshot_obj._info
+    instances = snapshot_info.pop('instances')
+    network_data = None
+    for instance in instances:
+        networks = [nic for nic in instance['nics'] if nic['network']['id'] == snap_network.get('id')]
+        network_list = [network for network in networks if network['network']['subnet']['id'] == snap_network['subnet']['id']]
+        if not network_list:
+            continue
+        network_details = network_list[0]
+        network_data = {
+            'id': snap_network.get('id'),
+            'name': network_details['network']['name'],
+            'cidr': network_details['network']['subnet']['cidr'],
+            'subnet_id': network_details['network']['subnet']['id']
+        }
+    return network_data
+
+
+def fetch_target_network_data(network):
+    if not network.get('id'):
+        raise Exception("No target network selected.")
+    osclient = openstack_client()
+    subnets = list(osclient.network.subnets(
+        project_id=os.environ.get('OS_PROJECT_ID'),
+        network_id=network.get('id')))
+    target_network_list = [{
+        'id': subnet['network_id'],
+        'name': network.get('name'),
+        'cidr': subnet['cidr'],
+        'subnet_id': subnet['id']
+        }for subnet in  subnets if subnet['id'] == network['subnet']['id']]
+    if target_network_list:
+        target_network = target_network_list[0]
+    return target_network
+
+
+def fetch_volume_type_mapping_data(vdisk_data, snapshot_id):
+    target_volume_type = {
+        'new_volume_type': vdisk_data['new_volume_type'],
+        'availability_zone': vdisk_data['availability_zone']
+    }
+    client = get_wlm_client()
+    snapshot_obj = client.snapshots.get(snapshot_id)
+    snapshot_info = snapshot_obj._info
+    instances = snapshot_info.pop('instances')
+    snapshot_disk = None
+    for instance in instances:
+        for vdisk in instance['vdisks']:
+            if vdisk.get('volume_id', None) == vdisk_data['id']:
+                snapshot_disk = vdisk
+    if snapshot_disk:
+        snapshot_volume_type = {
+            'old_volume_type': snapshot_disk['volume_type'],
+            'availability_zone': snapshot_disk['availability_zone']
+        }
+    return [snapshot_volume_type, target_volume_type]
+
+
+def fetch_target_instance_data(instance):
+    target_instance_data = {
+        'id': instance['id'],
+        'name': instance['name'],
+        'flavor': instance.get('flavor'),
+        'availability_zone': instance['availability_zone'],
+        'ips': [nic['ip_address'] if nic['ip_address'] else None for nic in instance['nics']],
+        'vdisks': []
+    }
+    for vdisk in instance['vdisks']:
+        vdisk_dict = {
+            'id': vdisk['id'],
+            'availability_zone': vdisk['availability_zone']
+        }
+        target_instance_data['vdisks'].append(vdisk_dict)
+    return target_instance_data
+
+def fetch_snapshot_instance_data(instance, snapshot_id):
+    client = get_wlm_client()
+    snapshot_obj = client.snapshots.get(snapshot_id)
+    snapshot_info = snapshot_obj._info
+    snapshot_instances = snapshot_info.pop('instances')
+    current_instance = None
+    for snapshot_instance in snapshot_instances:
+        if snapshot_instance['id'] == instance['id']:
+            current_instance = snapshot_instance
+    if not current_instance:
+        raise Exception("Invalid instance.")
+
+    snapshot_instance_data = {
+        'id': current_instance['id'],
+        'name': current_instance['name'],
+        'flavor': current_instance['flavor'],
+        'availability_zone': current_instance['metadata'].get('availability_zone'),
+        'ips': [nic['ip_address']for nic in current_instance['nics']],
+        'vdisks': []
+    }
+    for vdisk in current_instance['vdisks']:
+        if vdisk.get('volume_id', None) is None:
+                continue
+        vdisk_dict = {
+            'id': vdisk['volume_id'],
+            'availability_zone': vdisk['availability_zone']
+        }
+        snapshot_instance_data['vdisks'].append(vdisk_dict)
+    return snapshot_instance_data
+
+
+def display_network_mapping(network_lists):
+
+    header = ["Resource", "Source Network", "Target Network"]
+    table = PrettyTable()
+    table.field_names = header
+    table.hrules = ALL
+    table.title = "Network Mapping"
+
+    for idx, network_list in enumerate(network_lists, start=1):
+        net_list = [f"Network {idx}"]
+        for each_net in network_list:
+            subtable = PrettyTable()
+            subtable.border = False
+            subtable.header = False
+            subtable.align = 'l'
+            for k, v in each_net.items():
+                subtable.add_row([f"{k} : {v}"])
+            net_list.append(subtable)
+        table.add_row(net_list)
+    print("\nNetwrok Mapping Details:-")
+    print(table)
+
+
+def display_volume_mapping(volume_type_lists):
+
+    header = ["Resource", "Source Volume Type", "Target Volume Type"]
+    table = PrettyTable()
+    table.field_names = header
+    table.hrules = ALL
+    table.title = "Volume Type Mapping"
+
+
+    for idx, volume_type_list in enumerate(volume_type_lists, start=1):
+        vol_type_list = [f"Volume Type {idx}"]
+        for each_vol_type in volume_type_list:
+            subtable = PrettyTable()
+            subtable.border = False
+            subtable.header = False
+            subtable.align = 'l'
+            for k, v in each_vol_type.items():
+                subtable.add_row([f"{k} : {v}"])
+            vol_type_list.append(subtable)
+        table.add_row(vol_type_list)
+    print("\nVolume type Mapping Details:-")
+    print(table)
+
+
+def display_instance_mapping(instance_mapping_list):
+
+    header = ["Resource", "Source Instance", "Target Instance"]
+    table = PrettyTable()
+    table.field_names = header
+    table.hrules = ALL
+    table.title = "Instance Mapping"
+
+    for idx, instance_list in enumerate(instance_mapping_list, start=1):
+        instance_display_list = [f"Instance {idx}"]
+        for each_instance in instance_list:
+            subtable = PrettyTable()
+            subtable.border = False
+            subtable.header = False
+            subtable.align = 'l'
+            for k, v in each_instance.items():
+                if k == 'vdisks':
+                    for disk in v:
+                        subtable.add_row([f"availability zone of volume {disk['id']} : {disk['availability_zone']}"])
+                elif k == 'ips':
+                    for ip in v:
+                        if ip is not None:
+                            subtable.add_row([f"Ip Address : {ip}"])
+                        else:
+                            subtable.add_row(["Ip Address : Choose next available IP address."])
+                else:
+                    subtable.add_row([f"{k} : {v}"])
+            instance_display_list.append(subtable)
+        table.add_row(instance_display_list)
+    print("\nInstance Mapping Details:-")
+    print(table)
+
+
+def display_mapping(file_path, snapshot_id):
+    restore_data = read_json_file(file_path)
+    if not restore_data.get('restore_type'):
+        print("\nCould not determine restore type")
+        return 1
+    if restore_data.get('restore_type').lower() == 'inplace':
+        # TODO
+        print("\nCould not show mapping deatils, not implemented")
+        return 1
+
+    def get_network_mapping_data(restore_data, snapshot_id):
+        network_mapping = restore_data['openstack']['networks_mapping']['networks']
+        if not network_mapping:
+            return
+        network_mapping_list = []
+        for network in network_mapping:
+            snapshot_data = fetch_snapshot_network_data(network.get('snapshot_network'), snapshot_id)
+            target_data = fetch_target_network_data(network.get('target_network'))
+            network_mapping_list.append([snapshot_data, target_data])
+        return network_mapping_list
+
+    def get_volume_type_mapping_data(restore_data, snapshot_id):
+        instances = restore_data['openstack']['instances']
+        vdisk_mapping_list = []
+        for instance in instances:
+            if not instance['include']:
+                continue
+            for vdisk in instance['vdisks']:
+                volume_mapping_data = fetch_volume_type_mapping_data(vdisk, snapshot_id)
+                if volume_mapping_data not in vdisk_mapping_list:
+                    vdisk_mapping_list.append(volume_mapping_data)
+        return vdisk_mapping_list
+
+    def get_instance_mapping_data(restore_data, snapshot_id):
+        instances = restore_data['openstack']['instances']
+        instance_mapping_list = []
+        for instance in instances:
+            target_instance_data = fetch_target_instance_data(instance)
+            snapshot_instance_data = fetch_snapshot_instance_data(instance, snapshot_id)
+            instance_mapping_list.append([snapshot_instance_data, target_instance_data])
+        return instance_mapping_list
+
+    def show_mapping_data(fetch_function, display_function):
+        data = fetch_function(restore_data, snapshot_id)
+        if data:
+            display_function(data)
+
+    processes = []
+    for fetch_function, display_function in zip(
+            [get_instance_mapping_data, get_network_mapping_data, get_volume_type_mapping_data],
+            [display_instance_mapping, display_network_mapping, display_volume_mapping]):
+        process = multiprocessing.Process(target=show_mapping_data, args=(fetch_function, display_function))
+        processes.append(process)
+        process.start()
+
+    # Wait for all processes to finish
+    for process in processes:
+        process.join()
 
 def get_flavor(snapshot_flavor=None):
     """Get flavor.
@@ -163,10 +433,6 @@ def generate_restore_json(snapshot_id, restore_type):
     snapshot_info = snapshot_obj._info
     instances = snapshot_info.pop('instances')
 
-    def save_to_file(snapshot_id, restore_options, restore_type):
-        file_name = f"{snapshot_id}-{restore_type}-restore.json"
-        with open(file_name, "w") as restore_json:
-            json.dump(restore_options, restore_json, indent=4)
 
     restore_options = {
             'name': f"{restore_type} Restore.",
@@ -260,14 +526,21 @@ def generate_restore_json(snapshot_id, restore_type):
     if restore_type == 'selective':
         restore_options['openstack']['networks_mapping']['networks'] = snpashot_networks
 
-    save_to_file(snapshot_id, restore_options, restore_type)
+    return restore_options
+
+
+def save_to_file(snapshot_id, restore_options, restore_type):
+    file_name = f"{snapshot_id}-{restore_type}-restore.json"
+    with open(file_name, "w") as restore_json:
+        json.dump(restore_options, restore_json, indent=4)
+    return file_name
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='JsonGenerator',
                 description='Generates the restore.json file, '
                             'required for executing a Selective / Inplace restore operation.')
-    parser.add_argument("--restore_type",
+    parser.add_argument("--restore-type",
                         metavar="{selective, inplace}",
                         default='selective',
                         help="Specify whether to generate JSON for selective "
@@ -279,16 +552,24 @@ if __name__ == '__main__':
     parser.add_argument('snapshot_id',
                         metavar="<snapshot_id>",
                         help='Id of workload snapshot.')
+    parser.add_argument("--show-json-mapping",
+                        metavar="<restore_json_file>",
+                        help="Display the JSON mapping if you've already "
+                        "created a JSON file.  It requires a JSON file "
+                        "pre-created for the restore operaion."
+                        )
 
     args = parser.parse_args()
+    if not args.show_json_mapping:
+        restore_options = generate_restore_json(args.snapshot_id, args.restore_type)
+        file_generated = save_to_file(args.snapshot_id, restore_options, args.restore_type)
 
-    generate_restore_json(args.snapshot_id, args.restore_type)
+        # Display mapping to user
+        display_mapping(file_generated, args.snapshot_id)
 
-    print(f"The '{args.snapshot_id}-{args.restore_type}-restore.json' file has been generated "
-            "successfully. It's located in the current directory. "
-            "The JSON file contains details like available flavors, "
-            "network mapping, and volume types. "
-            "Please double-check before proceeding further.")
+        print(f"\nSuccessfully generated the JSON at {os.path.abspath(file_generated)} \n"
+              "Please make sure to verify the mapping details before "
+              "proceeding with the Restore operation.\n")
 
-
-# TODO: Display all the mappings done by us to the user in a tabular format.
+    else:
+        display_mapping(args.show_json_mapping, args.snapshot_id)
