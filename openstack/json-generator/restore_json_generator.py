@@ -248,11 +248,11 @@ def display_instance_mapping(instance_mapping_list):
 def display_mapping(file_path, snapshot_id):
     restore_data = read_json_file(file_path)
     if not restore_data.get('restore_type'):
-        print("\nCould not determine restore type")
+        print("\nCould not determine the restore type")
         return 1
     if restore_data.get('restore_type').lower() == 'inplace':
         # TODO
-        print("\nCould not show mapping deatils, not implemented")
+        print("\nInfo: Could not show mapping details")
         return 1
 
     def get_network_mapping_data(restore_data, snapshot_id):
@@ -556,7 +556,7 @@ if __name__ == '__main__':
                         metavar="<restore_json_file>",
                         help="Display the JSON mapping if you've already "
                         "created a JSON file.  It requires a JSON file "
-                        "pre-created for the restore operaion."
+                        "pre-created for the restore operation."
                         )
 
     args = parser.parse_args()
