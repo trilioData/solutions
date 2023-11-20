@@ -254,18 +254,19 @@ def display_instance_mapping(instance_mapping_list):
             subtable.border = False
             subtable.header = False
             subtable.align = 'l'
-            for k, v in each_instance.items():
-                if k == 'vdisks':
-                    for disk in v:
-                        subtable.add_row([f"availability zone of volume {disk['id']} : {disk['availability_zone']}"])
-                elif k == 'ips':
-                    for ip in v:
-                        if ip is not None:
-                            subtable.add_row([f"Ip Address : {ip}"])
-                        else:
-                            subtable.add_row(["Ip Address : Choose next available IP address."])
-                else:
-                    subtable.add_row([f"{k} : {v}"])
+            if each_instance:
+                for k, v in each_instance.items():
+                    if k == 'vdisks':
+                        for disk in v:
+                            subtable.add_row([f"availability zone of volume {disk['id']} : {disk['availability_zone']}"])
+                    elif k == 'ips':
+                        for ip in v:
+                            if ip is not None:
+                                subtable.add_row([f"Ip Address : {ip}"])
+                            else:
+                                subtable.add_row(["Ip Address : Choose next available IP address."])
+                    else:
+                        subtable.add_row([f"{k} : {v}"])
             instance_display_list.append(subtable)
         table.add_row(instance_display_list)
     print("\nInstance Mapping Details:-")
@@ -337,9 +338,11 @@ def display_selective_restore_mapping(restore_data, snapshot_id):
 
     def get_instance_mapping_data(restore_data, snapshot_id):
         instances = restore_data['openstack']['instances']
+        target_instance_data = []
         instance_mapping_list = []
         for instance in instances:
-            target_instance_data = fetch_target_instance_data(instance)
+            if instance['include']:
+                target_instance_data = fetch_target_instance_data(instance)
             snapshot_instance_data = fetch_snapshot_instance_data(instance, snapshot_id)
             instance_mapping_list.append([snapshot_instance_data, target_instance_data])
         return instance_mapping_list
