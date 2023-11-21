@@ -92,7 +92,8 @@ def fetch_target_network_data(network):
         }for subnet in  subnets if subnet['id'] == network['subnet']['id']]
     if target_network_list:
         target_network = target_network_list[0]
-    return target_network
+        return target_network
+    return []
 
 
 def fetch_volume_type_mapping_data(vdisk_data, snapshot_id):
@@ -475,9 +476,18 @@ def get_available_network(existing_network_id, existing_network_cidr=None):
             'network_id': subnet.network_id} for subnet in subnets]
 
         nearest_net_subnet = choose_existing_network(existing_network_cidr, subnet_list)
-        nearest_network = [network for network in network_list if nearest_net_subnet['network_id'] in network['id']]
+        if nearest_net_subnet:
+            nearest_network = next((network for network in network_list if nearest_net_subnet['network_id'] in network['id']), None)
+        else:
+            nearest_network = network_list[0]
 
+        print("WARNING: Could not find suitable network, "\
+            "Please assign preferred target network "\
+                "for the snapshot network {}".format(existing_network_id))
         return nearest_network
+    else:
+        print("ERROR : No networks present in openstack environment for mapping.")
+        return None
 
 
 def choose_existing_network(snapshots_cidr, available_networks):
@@ -485,32 +495,33 @@ def choose_existing_network(snapshots_cidr, available_networks):
     # If an exact CIDR match is not found but the same network address is found, it proceeds to search for a higher IP range based on the netmask.
     # If both of the above conditions fail, the code selects a subnet based on the availability of address space, ensuring sufficient IP addresses.
 
-    snapshots_cidr_obj = ipaddress.IPv4Network(snapshots_cidr)
-
-    higher_ip_range = []
-    for network in available_networks:
-        subnet_cidr_obj = ipaddress.IPv4Network(network['cidr'])
-        if snapshots_cidr_obj.network_address == subnet_cidr_obj.network_address:
-            if snapshots_cidr_obj.netmask == subnet_cidr_obj.netmask:
-                return network
-            elif snapshots_cidr_obj.netmask > subnet_cidr_obj.netmask:
-                higher_ip_range.append(network)
-
-    if higher_ip_range:
-        return higher_ip_range[0]
-
-    # Address Space Availability
     nearest_network = None
-    min_difference = float('inf')  # Initialize with positive infinity
+    if snapshots_cidr and available_networks:
+        snapshots_cidr_obj = ipaddress.IPv4Network(snapshots_cidr)
 
-    for network in available_networks:
-        subnet_cidr_obj = ipaddress.IPv4Network(network['cidr'])
-        difference = int(subnet_cidr_obj.network_address) - int(snapshots_cidr_obj.network_address)
+        higher_ip_range = []
+        for network in available_networks:
+            subnet_cidr_obj = ipaddress.IPv4Network(network['cidr'])
+            if snapshots_cidr_obj.network_address == subnet_cidr_obj.network_address:
+                if snapshots_cidr_obj.netmask == subnet_cidr_obj.netmask:
+                    return network
+                elif snapshots_cidr_obj.netmask > subnet_cidr_obj.netmask:
+                    higher_ip_range.append(network)
 
-        # Check if the current network is closer than the previous closest
-        if 0 < difference < min_difference:
-            min_difference = difference
-            nearest_network = network
+        if higher_ip_range:
+            return higher_ip_range[0]
+
+        # Address Space Availability
+        min_difference = float('inf')  # Initialize with positive infinity
+
+        for network in available_networks:
+            subnet_cidr_obj = ipaddress.IPv4Network(network['cidr'])
+            difference = int(subnet_cidr_obj.network_address) - int(snapshots_cidr_obj.network_address)
+
+            # Check if the current network is closer than the previous closest
+            if 0 < difference < min_difference:
+                min_difference = difference
+                nearest_network = network
 
     return nearest_network
 
@@ -564,16 +575,19 @@ def generate_restore_json(snapshot_id, restore_type):
             vmoptions['nics'] = []
             for nic in instance['nics']:
                 randomly_picked_network = get_available_network(nic['network']['id'], nic['network']['subnet']['cidr'])
-                newnic = {
-                    'id': nic['network']['id'],
-                    'mac_address': '',
-                    'ip_address': '',           # Check for next available IP addresses
-                    'network': {'id': randomly_picked_network['id'],
-                                'subnet': { 'id':
-                                    randomly_picked_network['subnet_ids'][0]
-                                    if randomly_picked_network['subnet_ids'] else ''},
-                            },
-                    }
+                newnic = {}
+                if randomly_picked_network:
+                    newnic = {
+                        'id': nic['network']['id'],
+                        'mac_address': '',
+                        'ip_address': '',           # Check for next available IP addresses
+                        'network': {'id': randomly_picked_network['id'],
+                                    'subnet': { 'id':
+                                        randomly_picked_network['subnet_ids'][0]
+                                        if randomly_picked_network['subnet_ids'] else ''},
+                                },
+                        }
+
                 vmoptions['nics'].append(newnic)
 
                 already_exists = any(
@@ -588,15 +602,17 @@ def generate_restore_json(snapshot_id, restore_type):
                             'id': nic['network']['subnet']['id']
                         }
                 }
-                selected_target_network = get_available_network(nic['network']['id'])
-                target_network = {
-                        'id': selected_target_network['id'],
-                        'name': selected_target_network['name'],
-                        'subnet': {
-                            'id': selected_target_network['subnet_ids'][0] 
-                            if selected_target_network['subnet_ids'] else ''
-                        }
-                }
+
+                target_network = {}
+                if randomly_picked_network:
+                    target_network = {
+                            'id': randomly_picked_network['id'],
+                            'name': randomly_picked_network['name'],
+                            'subnet': {
+                                'id': randomly_picked_network['subnet_ids'][0] 
+                                if randomly_picked_network['subnet_ids'] else ''
+                            }
+                    }
                 network = {
                         'snapshot_network': snapshot_network,
                         'target_network': target_network
