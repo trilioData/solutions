@@ -26,7 +26,7 @@ This tool is designed to generate a JSON file based on the restore operation typ
 The generated JSON may also need the user's intervention to verify the mappings of the source and target resources.
 Hence, it is advised to check the mapping as per the requirement and then use it for the restore operation.
 
-Check out the CLI commands for restore operation at https://docs.trilio.io/openstack/user-guide/restores#selective-restore
+Check out the CLI commands for restore operation at https://docs.trilio.io/openstack/user-guide/restores
 
 ## Usage
 ```bash
