@@ -389,7 +389,7 @@ def display_mapping(file_path, snapshot_id):
         return 1
 
 
-def get_flavor(snapshot_flavor=None):
+def get_flavor(snapshot_flavor=None, instance_id=None):
     """Get flavor.
 
     Args:
@@ -402,9 +402,9 @@ def get_flavor(snapshot_flavor=None):
     flavors_obj = list(osclient.compute.flavors())
     flavors = [{
         'id':flavor.id,
+        'vcpus':flavor.vcpus,
         'ram':flavor.ram,
         'disk':flavor.disk,
-        'vcpus':flavor.vcpus,
         'ephemeral':flavor.ephemeral,
         'swap':flavor.swap} for flavor in flavors_obj]
 
@@ -416,6 +416,9 @@ def get_flavor(snapshot_flavor=None):
     if preferred_flavour:
         return preferred_flavour
     elif flavors:
+        print("WARNING: Could not find suitable flavor, "\
+              "Please assign preferred flavor ID to the target "\
+              "of the source instance {}".format(instance_id))
         return flavors[-1]
 
 
@@ -434,6 +437,9 @@ def get_volume_type(existing_vol_type):
     if volume_type_names:
         if existing_vol_type in volume_type_names:
             return existing_vol_type
+        print("WARNING: Could not find suitable volume type, "\
+              "Please assign preferred target volume type to "\
+              "the source volume type {}".format(existing_vol_type))
         return volume_type_names[0]
 
 
@@ -534,8 +540,9 @@ def generate_restore_json(snapshot_id, restore_type):
         vmoptions = {'id': instance['id'],
                     'include': True,
                     'name': instance['name'],
-                    'flavor': get_flavor(instance['flavor']),
-                    'availability_zone': instance['metadata'].get('availability_zone', 'nova')
+                    'flavor': get_flavor(instance['flavor'], instance['id']),
+                    'availability_zone': instance['metadata'].get(
+                                                 'availability_zone', 'nova')
                     }
 
         vmoptions['vdisks'] = []
