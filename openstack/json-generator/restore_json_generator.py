@@ -478,9 +478,13 @@ def get_available_network(existing_network_id, existing_network_cidr=None):
         nearest_net_subnet = choose_existing_network(existing_network_cidr, subnet_list)
         if nearest_net_subnet:
             nearest_network = next((network for network in network_list if nearest_net_subnet['network_id'] in network['id']), None)
-            return nearest_network
         else:
-            return network_list[0]
+            nearest_network = network_list[0]
+
+        print("WARNING: Could not find suitable network, "\
+            "Please assign preferred target network "\
+                "for the snapshot network {}".format(existing_network_id))
+        return nearest_network
     else:
         print("ERROR : No networks present in openstack environment for mapping.")
         return None
