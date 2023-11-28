@@ -129,6 +129,7 @@ def fetch_volume_mapping_data(instance, snapshot_id):
         'id': current_instance['id'],
         'name': current_instance['name'],
         'include': instance.get('include', False),
+        'restore_boot_disk': instance.get('restore_boot_disk', False),
         'vdisks': []
     }
     for snap_vdisk in current_instance['vdisks']:
@@ -298,7 +299,7 @@ def show_inplace_mapping(instance_volume_mapping_list):
         v2_subtable.align = 'l'
 
         for k, v in each_instance.items():
-            if k in ['id', 'name', 'include']:
+            if k in ['id', 'name', 'include', 'restore_boot_disk']:
                 instance_subtable.add_row([f"{k} : {v}"])
             elif k == 'vdisks':
                 for disk in v:
@@ -552,13 +553,16 @@ def generate_restore_json(snapshot_id, restore_type):
                     'include': True,
                     'name': instance['name'],
                     'flavor': get_flavor(instance['flavor'], instance['id']),
+                    'restore_boot_disk': False,
                     'availability_zone': instance['metadata'].get(
                                                  'availability_zone', 'nova')
                     }
 
         vmoptions['vdisks'] = []
         for vdisk in instance['vdisks']:
-
+            if vdisk.get('image_id', None):
+                vmoptions['restore_boot_disk'] = True
+                continue
             if vdisk.get('volume_id', None) is None:
                 continue
             new_volume_type = get_volume_type(vdisk['volume_type'])
@@ -618,6 +622,7 @@ def generate_restore_json(snapshot_id, restore_type):
                         'target_network': target_network
                 }
                 snpashot_networks.append(network)
+            vmoptions.pop('restore_boot_disk')
         else:
             # Flavors are not required for inplace restore.
             vmoptions.pop('flavor')
