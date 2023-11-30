@@ -1,0 +1,17 @@
+# /etc/systemd/system/deleterecords.service
+[Unit]
+Description=Service to Delete historical old records from workloadmgr database
+After=deleterecords.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python DeleteHistoricalRecords.py
+KillMode=control-group
+Restart=on-failure
+#WorkingDirectory=/root/historical_data_cleanup
+WorkingDirectory=/root/jayesh-new-workspace/solutions/openstack/CleanWlmDatabase/historical_data_cleanup
+
+[Install]
+WantedBy=multi-user.target
+

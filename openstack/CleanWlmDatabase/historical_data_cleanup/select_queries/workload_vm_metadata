@@ -1,0 +1,1 @@
+SELECT del_table.id FROM workload_vm_metadata AS del_table JOIN (SELECT main.id FROM workload_vm_metadata AS main INNER JOIN workload_vms AS sub1 INNER JOIN workloads AS sub2 WHERE main.workload_vm_id = sub1.id AND sub1.workload_id = sub2.id AND sub2.deleted = 1 LIMIT #LIMIT#) del_select ON del_select.id = del_table.id

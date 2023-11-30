@@ -1,0 +1,1 @@
+DELETE FROM task_status_messages where id in ('#IDs')

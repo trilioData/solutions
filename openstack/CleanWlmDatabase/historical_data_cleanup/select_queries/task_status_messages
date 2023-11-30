@@ -1,0 +1,1 @@
+SELECT del_table.id FROM task_status_messages AS del_table JOIN (SELECT main.id FROM task_status_messages AS main, tasks AS sub WHERE main.task_id = sub.id AND sub.STATUS = 'Done' LIMIT #LIMIT#) del_select ON del_select.id = del_table.id
