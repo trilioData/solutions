@@ -76,6 +76,8 @@ After successful execution, the tool will create a new JSON file in the current 
 - To display the mapping information from an existing JSON file, the user needs to run the command with `--show-json-mapping` and the JSON file path.
 After successful execution, the tool will show the mapping information in a tabular format.
 
+- For selective restore, on T4O versions that capture Nova server groups in snapshots, each instance in the generated JSON also carries an optional `server_group` field holding the id of a server group on the target cloud (matched by id first, then by name/policy). The restored VM boots into this server group; an empty value means no server group assignment. Like the other mappings, verify the proposed server group before running the restore.
+
 ## Examples
 ```bash
 python3 restore_json_generator.py --restore-type selective 7dee5340-2479-4a37-8fdc-60318c9c223f

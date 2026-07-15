@@ -155,6 +155,9 @@ def fetch_target_instance_data(instance):
         'ips': [nic['ip_address'] if nic['ip_address'] else None for nic in instance['nics']],
         'vdisks': []
     }
+    if 'server_group' in instance:
+        target_instance_data['server_group'] = \
+            instance.get('server_group') or 'N/A'
     for vdisk in instance['vdisks']:
         vdisk_dict = {
             'id': vdisk['id'],
@@ -182,6 +185,15 @@ def fetch_snapshot_instance_data(instance, snapshot_id):
         'ips': [nic['ip_address']for nic in current_instance['nics']],
         'vdisks': []
     }
+    if 'server_group' in current_instance:
+        snapshot_server_group = current_instance.get('server_group')
+        if snapshot_server_group:
+            snapshot_instance_data['server_group'] = "{} ({}) : {}".format(
+                snapshot_server_group.get('name'),
+                snapshot_server_group.get('id'),
+                snapshot_server_group.get('policies'))
+        else:
+            snapshot_instance_data['server_group'] = 'N/A'
     for vdisk in current_instance['vdisks']:
         if vdisk.get('volume_id', None) is None:
                 continue
@@ -445,6 +457,57 @@ def get_volume_type(existing_vol_type):
         return volume_type_names[0]
 
 
+def get_server_group_policies(server_group):
+    """Return a server group's placement policies as a list.
+
+    Handles both Nova API shapes: microversion < 2.64 exposes 'policies'
+    (a list), >= 2.64 exposes 'policy' (a single string). Returns []
+    when neither is set.
+    """
+    policies = getattr(server_group, 'policies', None)
+    if policies:
+        return list(policies)
+    policy = getattr(server_group, 'policy', None)
+    return [policy] if policy else []
+
+
+def get_server_group(snapshot_server_group, instance_id):
+    """Get target server group id for the group captured in the snapshot.
+
+    Args:
+        snapshot_server_group (dict): server group captured in snapshot
+            ({'id': ..., 'name': ..., 'policies': ...}).
+        instance_id (string): source instance id, used in warnings.
+
+    Returns:
+        string: Returns id of matching target server group, or '' when no
+        suitable group exists ('' means no server group assignment).
+    """
+    osclient = openstack_client()
+    server_groups = list(osclient.compute.server_groups())
+
+    for server_group in server_groups:
+        if server_group.id == snapshot_server_group.get('id'):
+            return server_group.id
+
+    snapshot_policies = snapshot_server_group.get('policies') or ''
+    same_name_groups = [server_group for server_group in server_groups
+                        if server_group.name == snapshot_server_group.get('name')]
+    for server_group in same_name_groups:
+        policies = ', '.join(get_server_group_policies(server_group))
+        if policies == snapshot_policies:
+            return server_group.id
+    if same_name_groups:
+        return same_name_groups[0].id
+
+    print("WARNING: Could not find suitable server group, "\
+          "Please assign preferred target server group id for the "\
+          "source server group {} ({}) of instance {}".format(
+              snapshot_server_group.get('name'),
+              snapshot_server_group.get('id'), instance_id))
+    return ''
+
+
 def get_available_network(existing_network_id, existing_network_cidr=None):
     """Get network for mapping.
 
@@ -576,6 +639,14 @@ def generate_restore_json(snapshot_id, restore_type):
         restore_options['openstack']['instances'].append(vmoptions)
 
         if restore_type == 'selective':
+            # 'server_group' is returned by snapshot API only on T4O
+            # versions supporting server group restore; empty value
+            # means restore without server group assignment.
+            if 'server_group' in instance:
+                snapshot_server_group = instance.get('server_group')
+                vmoptions['server_group'] = get_server_group(
+                    snapshot_server_group, instance['id']) \
+                    if snapshot_server_group else ''
             vmoptions['nics'] = []
             for nic in instance['nics']:
                 randomly_picked_network = get_available_network(nic['network']['id'], nic['network']['subnet']['cidr'])
