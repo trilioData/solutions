@@ -1,0 +1,1 @@
+SELECT del_table.id FROM snapshot_vm_resources AS del_table JOIN (SELECT main.id FROM snapshot_vm_resources AS main INNER JOIN snapshots AS sub1 WHERE main.snapshot_id = sub1.id AND sub1.deleted = 1 LIMIT #LIMIT#) del_select ON del_select.id = del_table.id

@@ -1,0 +1,1 @@
+DELETE FROM restored_vm_resource_metadata where id in ('#IDs')

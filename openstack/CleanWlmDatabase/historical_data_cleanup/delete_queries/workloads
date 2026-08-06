@@ -1,0 +1,1 @@
+DELETE FROM workloads where id in ('#IDs')

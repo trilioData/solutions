@@ -1,0 +1,1 @@
+DELETE FROM tasks where id in ('#IDs')

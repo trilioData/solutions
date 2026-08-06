@@ -1,0 +1,1 @@
+SELECT id FROM tasks WHERE STATUS = 'Done' LIMIT #LIMIT#

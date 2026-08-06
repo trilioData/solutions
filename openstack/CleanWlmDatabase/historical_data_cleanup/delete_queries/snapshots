@@ -1,0 +1,1 @@
+DELETE FROM snapshots where id in ('#IDs')

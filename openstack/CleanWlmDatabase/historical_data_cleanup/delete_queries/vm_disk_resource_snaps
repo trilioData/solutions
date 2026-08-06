@@ -1,0 +1,1 @@
+DELETE FROM vm_disk_resource_snaps where id in ('#IDs')

@@ -1,0 +1,1 @@
+SELECT del_table.id FROM workloads AS del_table JOIN (SELECT main.id FROM workloads AS main INNER JOIN snapshots AS sub1 WHERE main.id = sub1.workload_id AND main.deleted = 1 LIMIT #LIMIT#) del_select ON del_select.id = del_table.id

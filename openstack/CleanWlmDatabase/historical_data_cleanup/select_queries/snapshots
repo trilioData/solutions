@@ -1,0 +1,1 @@
+SELECT id FROM snapshots WHERE snapshots.deleted = 1 limit #LIMIT#

@@ -1,0 +1,1 @@
+SELECT del_table.id FROM restored_vm_metadata AS del_table JOIN (SELECT main.id FROM restored_vm_metadata AS main INNER JOIN restored_vms AS sub1 INNER JOIN restores AS sub2 INNER JOIN snapshots AS sub3 WHERE main.restored_vm_id = sub1.id AND sub1.restore_id = sub2.id AND sub2.snapshot_id = sub3.id AND sub3.deleted = 1 LIMIT #LIMIT#) del_select ON del_select.id = del_table.id

@@ -1,0 +1,1 @@
+DELETE FROM snapshot_metadata where id in ('#IDs')
