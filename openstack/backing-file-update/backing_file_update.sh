@@ -6,7 +6,7 @@ declare -a qcow2list
 LOG_FILE=/tmp/backing_file_update.log
 
 if [ $# -lt "1" ]; then
-  echo "Usage: $0 /var/triliovault-mounts/<base64>/workload_<workload_id>"
+  echo "Usage: $0 /var/lib/nova/triliovault-mounts/<base64>/workload_<workload_id>"
   exit 1;
 fi
 
@@ -29,9 +29,9 @@ if [ ! -f "$workload_db_path" ]; then
 fi
 
 # check if workload is encrypted and fetch the secret_uuid for same. ask user for payload
-is_encrypted=`cat $workload_db_path | python -c "import json,sys;obj=json.load(sys.stdin);print(obj.get('encryption'));"`
+is_encrypted=`cat $workload_db_path | python3 -c "import json,sys;obj=json.load(sys.stdin);print(obj.get('encryption'));"`
 if [ "$is_encrypted" == "True" ]; then
-  secret_uuid=`cat $workload_db_path | python -c "import json,sys;obj=json.load(sys.stdin);print(obj.get('secret_uuid'));"`
+  secret_uuid=`cat $workload_db_path | python3 -c "import json,sys;obj=json.load(sys.stdin);print(obj.get('secret_uuid'));"`
   echo Please provide the --payload for the secret_uuid used in the workload:
   read payload
   echo "is_encrypted: $is_encrypted secret_uuid: $secret_uuid payload: $payload"
@@ -58,7 +58,7 @@ do
     current_backing_file=''
     if [ ! -z "$backing_cipher_json" ]
     then
-	    current_backing_file=`echo $backing_cipher_json | python -c "import json,sys;obj=json.load(sys.stdin);print(obj['file']['filename']);"`
+	    current_backing_file=`echo $backing_cipher_json | python3 -c "import json,sys;obj=json.load(sys.stdin);print(obj['file']['filename']);"`
     fi
   else
     current_backing_file=`qemu-img info $qcow_file_path | grep "backing\ file:" | cut -f3 -d' '`
